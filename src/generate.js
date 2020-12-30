@@ -1,7 +1,7 @@
 function createText(text) {
   const match = text.match(/\{\{(.+?)\}\}/);
   if (match) {
-    return `_string(_ctx.${match[1]})`
+    return `_string(_ctx.data.${match[1]})`
   } else {
     return `"${text}"`;
   }
@@ -19,7 +19,7 @@ function generateCode(node, index) {
   }
 
   if (node.type === 'if') {
-    return `${prefix}_if(_ctx.${node.expression}, function() { return ${ node.if ? traversal(node.if) : '[]' } }, function() { return ${ node.else ? traversal(node.else) : '[]' } })`
+    return `${prefix}_if(_ctx.data.${node.expression}, function() { return ${ node.if ? traversal(node.if) : '[]' } }, function() { return ${ node.else ? traversal(node.else) : '[]' } })`
   }
 }
 
