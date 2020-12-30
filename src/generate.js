@@ -1,9 +1,9 @@
 function createText(text) {
   const match = text.match(/\{\{(.+?)\}\}/);
   if (match) {
-    return `_string(${match[1]})`
+    return `_string(_ctx.${match[1]})`
   } else {
-    return text;
+    return `"${text}"`;
   }
 }
 
@@ -15,23 +15,23 @@ function generateCode(node, index) {
   }
 
   if (node.type === 'tag') {
-    return `${prefix}_creatElement('${node.name}', {}, [ ${ node.children ? generate(node.children) : '' } ])`
+    return `${prefix}_creatElement('${node.name}', {}, [ ${ node.children ? traversal(node.children) : '' } ])`
   }
 
   if (node.type === 'if') {
-    return `${prefix}_if(${node.expression}, function() { return ${ node.if ? generate(node.if) : '[]' } }, function() { return ${ node.else ? generate(node.else) : '[]' } })`
+    return `${prefix}_if(_ctx.${node.expression}, function() { return ${ node.if ? traversal(node.if) : '[]' } }, function() { return ${ node.else ? traversal(node.else) : '[]' } })`
   }
 }
 
-function generate(nodes) {
-  let code = '';
+function traversal(nodes) {
+  return nodes.map(function(node, i) {
+    return generateCode(node, i)
+  }).join('');
+}
 
-  for (let i = 0, len = nodes.length; i < len; i++) {
-    let node = nodes[i]
-    code += generateCode(node, i)
-  }
-
-  return code
+function generate(ast, options) {
+  let code = traversal(ast);
+  return `function create(_ctx) { ${code} }`
 }
 
 export { generate };
