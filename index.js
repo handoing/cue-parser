@@ -1,6 +1,5 @@
-import { Tokenize } from './src/tokenize';
+import { tokenizer } from './src/tokenizer';
+import { parser } from './src/parser';
+import { generate } from './src/generate';
 
-function tokenize(input) {
-  return new Tokenize(input).scan();
-}
-export { tokenize }
+export { tokenizer, parser, generate }
