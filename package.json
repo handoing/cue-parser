@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "watch": "esbuild index.js --bundle --format=cjs --serve --outfile=./dist/parser.js",
-    "build": "esbuild index.js --bundle --format=cjs --outfile=./dist/parser.js",
+    "watch": "esbuild index.js --bundle --format=cjs --serve --outfile=./dist/index.js",
+    "build": "esbuild index.js --bundle --format=cjs --minify --outfile=./dist/index.js",
     "test": "node ./test/test.js"
   },
   "repository": {

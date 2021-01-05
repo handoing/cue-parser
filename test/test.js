@@ -1,6 +1,6 @@
 const fs = require("fs");
 const path = require("path");
-const { tokenizer, parser, generate } = require("../dist/parser");
+const { tokenizer, parser, generate } = require("../dist");
 
 const tokens = tokenizer(`
 <div
