@@ -31,7 +31,7 @@ function traversal(nodes) {
 
 function generate(ast, options) {
   let code = traversal(ast);
-  return `function create(_ctx) { ${code} }`
+  return `function create(_ctx) { return ${code} }`
 }
 
 export { generate };
