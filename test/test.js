@@ -3,13 +3,12 @@ const path = require("path");
 const { tokenizer, parser, generate } = require("../dist/parser");
 
 const tokens = tokenizer(`
-<div class="main">
-  <p>{{name}}</p>
-  {{#if showHello}}
-    <p>hello</p>
-  {{#else}}
-    <p>yellow</p>
-  {{/if}}
+<div
+  class="main"
+>
+  <img class="image" src="{{item.img}}"/>
+  <div class="title">hello {{item.desc}}</div>
+  <span class="icon"></span>
 </div>
 `);
 

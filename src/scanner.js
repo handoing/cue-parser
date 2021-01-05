@@ -10,6 +10,8 @@ const ATTRIBUTE_NAME_STATE = 'ATTRIBUTE_NAME_STATE';
 const BEFORE_ATTRIBUTE_VALUE_STATE = 'BEFORE_ATTRIBUTE_VALUE_STATE';
 const ATTRIBUTE_VALUE_DOUBLE_QUOTED_STATE = 'ATTRIBUTE_VALUE_DOUBLE_QUOTED_STATE';
 const AFTER_ATTRIBUTE_VALUE_QUOTED_STATE = 'AFTER_ATTRIBUTE_VALUE_QUOTED_STATE';
+const ATTRIBUTE_VALUE_DOUBLE_BRACE_STATE = 'ATTRIBUTE_VALUE_DOUBLE_BRACE_STATE';
+const AFTER_ATTRIBUTE_VALUE_BRACE_STATE = 'AFTER_ATTRIBUTE_VALUE_BRACE_STATE';
 const TEXT_STATE = 'TEXT_STATE';
 const EXPRESSION_START = 'EXPRESSION_START';
 const EXPRESSION = 'EXPRESSION';
@@ -50,10 +52,6 @@ class Scanner {
     } else if (cp === 60) { // <
       this.state = TAG_OPEN_STATE;
       ++this.index;
-      if (this.source.charCodeAt(this.index) === 47) {
-        this.state = TAG_CLOSE_STATE;
-        ++this.index;
-      }
     } else if (Character.isLetter(cp)) {
       this._createTextToken();
       this.state = TEXT_STATE;
@@ -71,7 +69,7 @@ class Scanner {
   }
 
   [TEXT_STATE](cp, c) {
-    if (Character.isChar(cp)) {
+    if (Character.isChar(cp) || cp === 46) { // .
       this.currentToken.value += c;
       ++this.index;
     } else if (cp === 60) {
@@ -91,6 +89,9 @@ class Scanner {
     if (Character.isLetter(cp)) {
       this._createStartTagToken();
       this.state = TAG_NAME_STATE;
+    } else if (this.source.charCodeAt(this.index) === 47) { // /
+      this.state = TAG_CLOSE_STATE;
+      ++this.index;
     }
   }
 
@@ -98,7 +99,7 @@ class Scanner {
     if (Character.isLetter(cp)) {
       this.currentToken.value += c;
       ++this.index;
-    } else if (Character.isWhiteSpace(cp)) {
+    } else if (Character.isWhiteSpace(cp) || cp === 10) { // \n
       this.state = BEFORE_ATTRIBUTE_NAME_STATE;
       ++this.index;
     } else if (cp === 62) { // >
@@ -112,13 +113,13 @@ class Scanner {
     if (Character.isLetter(cp)) {
       this._createAttr('');
       this.state = ATTRIBUTE_NAME_STATE;
-    } else if (Character.isWhiteSpace(cp)) {
+    } else if (Character.isWhiteSpace(cp) || cp === 10 || cp === 9) { // \n \t
       ++this.index;
     }
   }
 
   [ATTRIBUTE_NAME_STATE](cp, c) {
-    if (Character.isLetter(cp)) {
+    if (Character.isLetter(cp) || cp === 45) {
       this.currentAttr.name += c;
       ++this.index;
     } else if (cp === 61) { // =
@@ -131,11 +132,14 @@ class Scanner {
     if (cp === 34) { // "
       this.state = ATTRIBUTE_VALUE_DOUBLE_QUOTED_STATE;
       ++this.index;
+    } else if (cp === 123 && this.peek(1) === 123) { // {
+      this.state = ATTRIBUTE_VALUE_DOUBLE_BRACE_STATE;
+      this.index += 2;
     }
   }
 
   [ATTRIBUTE_VALUE_DOUBLE_QUOTED_STATE](cp, c) {
-    if (Character.isLetter(cp)) {
+    if (cp !== 34) {
       this.currentAttr.value += c;
       ++this.index;
     } else if (cp === 34) { // "
@@ -150,9 +154,37 @@ class Scanner {
       this.state = DATA_STATE;
       ++this.index;
       this._emitCurrentToken();
-    } else if (Character.isWhiteSpace(cp)) {
-      this.state = BEFORE_ATTRIBUTE_NAME_STATE;
+    } else if (Character.isWhiteSpace(cp) || cp === 10 || cp === 9) {
       ++this.index;
+    } else if (Character.isLetter(cp)) {
+      this.state = BEFORE_ATTRIBUTE_NAME_STATE;
+    } else if (cp === 47 || this.peek(1) === 62) { // />
+      this.state = DATA_STATE;
+      this.index += 2;
+      this._emitCurrentCloseToken();
+    }
+  }
+
+  [ATTRIBUTE_VALUE_DOUBLE_BRACE_STATE](cp, c) {
+    if (cp !== 125) {
+      this.currentAttr.value += c;
+      ++this.index;
+    } else if (cp === 125 && this.peek(1) === 125) { // }
+      this.currentToken.attrs.push(this.currentAttr)
+      this.state = AFTER_ATTRIBUTE_VALUE_BRACE_STATE;
+      this.index += 2;
+    }
+  }
+
+  [AFTER_ATTRIBUTE_VALUE_BRACE_STATE](cp) {
+    if (cp === 62) { // >
+      this.state = DATA_STATE;
+      ++this.index;
+      this._emitCurrentToken();
+    } else if (Character.isWhiteSpace(cp) || cp === 10 || cp === 9) {
+      ++this.index;
+    } else if (Character.isLetter(cp)) {
+      this.state = BEFORE_ATTRIBUTE_NAME_STATE;
     }
   }
 
@@ -192,6 +224,14 @@ class Scanner {
   _emitCurrentToken() {
     const ct = this.currentToken;
     this.buffer.push(ct);
+  }
+
+  _emitCurrentCloseToken() {
+    const currentTokenValue = this.currentToken.value;
+    this._emitCurrentToken();
+    this._createEndTagToken();
+    this.currentToken.value = currentTokenValue;
+    this._emitCurrentToken();
   }
 
   _createAttr(attrNameFirstCh) {
