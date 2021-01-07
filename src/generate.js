@@ -1,9 +1,33 @@
-function createText(text) {
+
+const isDirective = (function() {
+  const directives = [
+    'on-click',
+    'c-show',
+    'c-hide'
+  ];
+  return function(attrName) {
+    return directives.includes(attrName);
+  }
+})()
+
+function serializeAttrs(attrs) {
+  const serializeSting = Object.keys(attrs).reduce((serializeSting, attrName, index) => {
+    const key = `"${attrName}"`;
+    const value = isDirective(attrName) ? attrs[attrName] : `"${attrs[attrName]}"`
+    return serializeSting += `${key}: ${createText(value, true)},`
+  }, '')
+  return `{ ${serializeSting} }`;
+}
+
+function createText(text, isDirectiveValue) {
   const match = text.match(/\{\{(.+?)\}\}/);
   if (match) {
-    return `_string(_ctx.data.${match[1]})`
+    const prefix = match.input.substring(0, match.index);
+    const suffix = match.input.substring(match.index + match[0].length, match.input.length);
+    const _t = `${prefix}" + _string(_ctx.data.${match[1]}) + "${suffix}`
+    return isDirectiveValue ? _t : `"${_t}"`
   } else {
-    return `"${text}"`;
+    return isDirectiveValue ? text : `"${text}"`;
   }
 }
 
@@ -15,7 +39,13 @@ function generateCode(node, index) {
   }
 
   if (node.type === 'tag') {
-    return `${prefix}_creatElement('${node.name}', {}, [ ${ node.children ? traversal(node.children) : '' } ])`
+    const attrs = {};
+    if (node.attrs.length > 0) {
+      node.attrs.map(({ name, value }) => {
+        attrs[name] = value;
+      })
+    }
+    return `${prefix}_creatElement('${node.name}', ${serializeAttrs(attrs)}, [ ${ node.children ? traversal(node.children) : '' } ])`
   }
 
   if (node.type === 'if') {
