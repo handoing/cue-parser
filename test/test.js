@@ -6,7 +6,7 @@ const tokens = tokenizer(`
 <div
   class="main"
 >
-  <img class="image" on-click={{this.onChange()}} src="{{item.img}}"/>
+  <img class="image" on-click={{this.onChange($event)}} src="{{item.img}}"/>
   <div class="title">hello {{item.title}}</div>
   <span class="icon"></span>
 </div>

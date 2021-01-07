@@ -1,19 +1,27 @@
 
-const isDirective = (function() {
-  const directives = [
-    'on-click',
-    'c-show',
-    'c-hide'
-  ];
-  return function(attrName) {
-    return directives.includes(attrName);
+const directiveFilter = (function() {
+  const directives = {
+    'on-click': function(value) {
+      value = value.replace(/this/g, '_ctx');
+      return `function($event) { ${value} }`;
+    },
+    'c-show': function(value) {
+      return value;
+    },
+    'c-hide': function(value) {
+      return value;
+    }
+  };
+
+  return function(attrName, attrValue) {
+    return directives[attrName] ? directives[attrName](attrValue) : `"${attrValue}"`;
   }
 })()
 
 function serializeAttrs(attrs) {
   const serializeSting = Object.keys(attrs).reduce((serializeSting, attrName, index) => {
     const key = `"${attrName}"`;
-    const value = isDirective(attrName) ? attrs[attrName] : `"${attrs[attrName]}"`
+    const value = directiveFilter(attrName, attrs[attrName]);
     return serializeSting += `${key}: ${createText(value, true)},`
   }, '')
   return `{ ${serializeSting} }`;
