@@ -1,41 +1,59 @@
 
-const directiveFilter = (function() {
-  const directives = {
+const eventsFilter = (function() {
+  const events = {
     'on-click': function(value) {
       value = value.replace(/this/g, '_ctx');
       return `function($event) { ${value} }`;
-    },
-    'c-show': function(value) {
-      return value;
-    },
-    'c-hide': function(value) {
-      return value;
     }
   };
 
   return function(attrName, attrValue) {
-    return directives[attrName] ? directives[attrName](attrValue) : `"${attrValue}"`;
+    return events[attrName] ? events[attrName](attrValue) : `"${attrValue}"`;
+  }
+})()
+
+const directivesTransform = (function() {
+  const directives = {
+    'c-show': function(value) {
+      return '_vShow';
+    },
+    'c-hide': function(value) {
+      return '_vHide';
+    }
+  };
+
+  return function(attrName, attrValue) {
+    return directives[attrName] ? directives[attrName](attrValue) : `"${attrName}"`;
   }
 })()
 
 function serializeAttrs(attrs) {
   const serializeSting = Object.keys(attrs).reduce((serializeSting, attrName, index) => {
     const key = `"${attrName}"`;
-    const value = directiveFilter(attrName, attrs[attrName]);
-    return serializeSting += `${key}: ${createText(value, true)},`
+    const value = eventsFilter(attrName, attrs[attrName]);
+    return serializeSting += `${key}: ${createText(value, { isAnalysisEvent: true })},`
   }, '')
   return `{ ${serializeSting} }`;
 }
 
-function createText(text, isDirectiveValue) {
+function serializeDirectives(directives) {
+  const serializeSting = Object.keys(directives).reduce((serializeSting, attrName, index) => {
+    const key = directivesTransform(attrName, directives[attrName]);
+    const value = directives[attrName];
+    return serializeSting += `[${key}, ${createText(value)}],`
+  }, '')
+  return `[ ${serializeSting} ]`;
+}
+
+function createText(text, { isAnalysisEvent } = {}) {
   const match = text.match(/\{\{(.+?)\}\}/);
   if (match) {
     const prefix = match.input.substring(0, match.index);
     const suffix = match.input.substring(match.index + match[0].length, match.input.length);
     const _t = `${prefix}" + _string(_ctx.data.${match[1]}) + "${suffix}`
-    return isDirectiveValue ? _t : `"${_t}"`
+    return isAnalysisEvent ? _t : `"${_t}"`
   } else {
-    return isDirectiveValue ? text : `"${text}"`;
+    return isAnalysisEvent ? text : `"${text}"`;
   }
 }
 
@@ -47,13 +65,28 @@ function generateCode(node, index) {
   }
 
   if (node.type === 'tag') {
+    const hasAttrs = node.attrs.length > 0;
+    const hasDirectives = node.directives.length > 0;
     const attrs = {};
-    if (node.attrs.length > 0) {
+    const directives = {};
+    let createTagGenerateCode = '';
+
+    if (hasAttrs) {
       node.attrs.map(({ name, value }) => {
         attrs[name] = value;
       })
     }
-    return `${prefix}_creatElement('${node.name}', ${serializeAttrs(attrs)}, [ ${ node.children ? traversal(node.children) : '' } ])`
+
+    createTagGenerateCode = `_creatElement('${node.name}', ${serializeAttrs(attrs)}, [ ${ node.children ? traversal(node.children) : '' } ])`;
+
+    if (hasDirectives) {
+      node.directives.map(({ name, value }) => {
+        directives[name] = value;
+      })
+      createTagGenerateCode = `_withDirectives(${createTagGenerateCode}, ${serializeDirectives(directives)})`
+    }
+
+    return `${prefix} ${createTagGenerateCode}`
   }
 
   if (node.type === 'if') {

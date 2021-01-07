@@ -15,6 +15,7 @@ function parser(tokens) {
           type: 'tag',
           name: token.value,
           attrs: token.attrs,
+          directives: token.directives,
           children: []
         })
         break;

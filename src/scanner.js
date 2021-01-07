@@ -17,6 +17,8 @@ const EXPRESSION_START = 'EXPRESSION_START';
 const EXPRESSION = 'EXPRESSION';
 const EXPRESSION_END = 'EXPRESSION_END';
 
+const prefixDirective = 'c-';
+
 class Scanner {
   constructor(code) {
     this.source = code;
@@ -143,7 +145,11 @@ class Scanner {
       this.currentAttr.value += c;
       ++this.index;
     } else if (cp === 34) { // "
-      this.currentToken.attrs.push(this.currentAttr)
+      if (this.currentAttr.name.indexOf(prefixDirective) === 0) {
+        this.currentToken.directives.push(this.currentAttr)
+      } else {
+        this.currentToken.attrs.push(this.currentAttr)
+      }
       this.state = AFTER_ATTRIBUTE_VALUE_QUOTED_STATE;
       ++this.index;
     }
@@ -170,7 +176,11 @@ class Scanner {
       this.currentAttr.value += c;
       ++this.index;
     } else if (cp === 125 && this.peek(1) === 125) { // }
-      this.currentToken.attrs.push(this.currentAttr)
+      if (this.currentAttr.name.indexOf(prefixDirective) === 0) {
+        this.currentToken.directives.push(this.currentAttr)
+      } else {
+        this.currentToken.attrs.push(this.currentAttr)
+      }
       this.state = AFTER_ATTRIBUTE_VALUE_BRACE_STATE;
       this.index += 2;
     }
@@ -245,7 +255,8 @@ class Scanner {
     this.currentToken = {
       type: TokenType.START_TAG_TOKEN,
       value: '',
-      attrs: []
+      attrs: [],
+      directives: []
     };
   }
 
