@@ -77,6 +77,22 @@ function parser(tokens) {
           list.push(childNode)
         }
         break;
+      case TokenType.EXP_START_FOR_TOKEN:
+        stack.push({
+          type: 'for',
+          expression: token.value,
+          children: []
+        })
+        break;
+      case TokenType.EXP_END_FOR_TOKEN:
+        childNode = stack.pop();
+        node = stack[stack.length - 1];
+        if (node) {
+          node.children.push(childNode);
+        } else {
+          list.push(childNode)
+        }
+        break;
     }
     tokenIndex++;
   }

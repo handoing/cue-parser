@@ -13,9 +13,12 @@ const AFTER_ATTRIBUTE_VALUE_QUOTED_STATE = 'AFTER_ATTRIBUTE_VALUE_QUOTED_STATE';
 const ATTRIBUTE_VALUE_DOUBLE_BRACE_STATE = 'ATTRIBUTE_VALUE_DOUBLE_BRACE_STATE';
 const AFTER_ATTRIBUTE_VALUE_BRACE_STATE = 'AFTER_ATTRIBUTE_VALUE_BRACE_STATE';
 const TEXT_STATE = 'TEXT_STATE';
-const EXPRESSION_START = 'EXPRESSION_START';
-const EXPRESSION = 'EXPRESSION';
-const EXPRESSION_END = 'EXPRESSION_END';
+const IF_EXPRESSION_START = 'IF_EXPRESSION_START';
+const IF_EXPRESSION = 'IF_EXPRESSION';
+const IF_EXPRESSION_END = 'IF_EXPRESSION_END';
+const FOR_EXPRESSION_START = 'FOR_EXPRESSION_START';
+const FOR_EXPRESSION = 'FOR_EXPRESSION';
+const FOR_EXPRESSION_END = 'FOR_EXPRESSION_END';
 
 const prefixDirective = 'c-';
 
@@ -65,8 +68,13 @@ class Scanner {
         this.state = TEXT_STATE;
       }
     } else if (cp === 35 || cp === 47) { // # /
-      this.state = EXPRESSION_START;
-      ++this.index;
+      if ((this.peek(1) === 105 && this.peek(2) === 102) || this.peek(1) === 101) { // look if
+        this.state = IF_EXPRESSION_START;
+        ++this.index;
+      } else if (this.peek(1) === 108 && this.peek(2) === 105) { // look li
+        this.state = FOR_EXPRESSION_START;
+        ++this.index;
+      }
     }
   }
 
@@ -198,24 +206,24 @@ class Scanner {
     }
   }
 
-  [EXPRESSION_START](cp) {
-    if (cp === 105 || cp === 102) {
+  [IF_EXPRESSION_START](cp) {
+    if (cp === 105 || cp === 102) { // i or f
       ++this.index;
     } else if (Character.isWhiteSpace(cp)) {
       ++this.index;
     } else if (cp === 101) { // e
       this._createExpressionThenIf();
-      this.state = EXPRESSION;
+      this.state = IF_EXPRESSION;
     } else if (cp === 125) { // {
       this._createExpressionEndIf();
-      this.state = EXPRESSION;
+      this.state = IF_EXPRESSION;
     } else if (Character.isLetter(cp)) {
       this._createExpressionStartIf();
-      this.state = EXPRESSION;
+      this.state = IF_EXPRESSION;
     }
   }
 
-  [EXPRESSION](cp, c) {
+  [IF_EXPRESSION](cp, c) {
     if (Character.isLetter(cp)) {
       this.currentToken.value += c;
       ++this.index;
@@ -223,11 +231,52 @@ class Scanner {
       ++this.index;
     } else if (cp === 125) { // }
       ++this.index;
-      if (this.source.charCodeAt(this.index) === 125) { // }
-        this.state = DATA_STATE;
-        ++this.index;
-        this._emitCurrentToken();
+      this.state = IF_EXPRESSION_END;
+    }
+  }
+
+  [IF_EXPRESSION_END](cp, c) {
+    if (cp === 125) { // }
+      this.state = DATA_STATE;
+      ++this.index;
+      this._emitCurrentToken();
+    }
+  }
+
+  [FOR_EXPRESSION_START](cp, c) {
+    if (cp === 108 || cp === 105 || cp === 115 || cp === 116) { // list
+      if (this.peek(1) === 105 && this.peek(2) === 115 && this.peek(3) === 116) {
+        this.index += 4;
       }
+    } else if (Character.isWhiteSpace(cp)) {
+      ++this.index;
+    } else if (cp === 125) { // {
+      this._createExpressionEndFor();
+      this.state = FOR_EXPRESSION;
+    } else if (Character.isLetter(cp)) {
+      this._createExpressionStartFor();
+      this.state = FOR_EXPRESSION;
+    }
+  }
+
+  [FOR_EXPRESSION](cp, c) {
+    if (Character.isLetter(cp)) {
+      this.currentToken.value += c;
+      ++this.index;
+    } else if (Character.isWhiteSpace(cp)) {
+      this.currentToken.value += c;
+      ++this.index;
+    } else if (cp === 125) { // }
+      ++this.index;
+      this.state = FOR_EXPRESSION_END;
+    }
+  }
+
+  [FOR_EXPRESSION_END](cp, c) {
+    if (cp === 125) { // }
+      this.state = DATA_STATE;
+      ++this.index;
+      this._emitCurrentToken();
     }
   }
 
@@ -291,6 +340,20 @@ class Scanner {
   _createExpressionEndIf() {
     this.currentToken = {
       type: TokenType.EXP_END_IF_TOKEN,
+      value: ''
+    };
+  }
+
+  _createExpressionStartFor() {
+    this.currentToken = {
+      type: TokenType.EXP_START_FOR_TOKEN,
+      value: ''
+    };
+  }
+
+  _createExpressionEndFor() {
+    this.currentToken = {
+      type: TokenType.EXP_END_FOR_TOKEN,
       value: ''
     };
   }

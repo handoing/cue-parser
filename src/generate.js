@@ -92,6 +92,11 @@ function generateCode(node, index) {
   if (node.type === 'if') {
     return `${prefix}_if(_ctx.data.${node.expression}, function() { return ${ node.if ? traversal(node.if) : '[]' } }, function() { return ${ node.else ? traversal(node.else) : '[]' } })`
   }
+
+  if (node.type === 'for') {
+    const [ valueName, itemName, keyIndex ] = node.expression.split(/ as | by /g)
+    return `${prefix}_for(_ctx.data.${valueName}, function(${itemName}, ${keyIndex}) { return [ ${ node.children ? traversal(node.children) : '' } ] })`
+  }
 }
 
 function traversal(nodes) {

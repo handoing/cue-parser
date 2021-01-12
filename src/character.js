@@ -4,6 +4,8 @@ const Character = {
   },
   isLetter(cp) {
     return (
+      cp === 45 || // -
+      cp === 95 || // _
       (cp >= 0x41 && cp <= 0x5a) || // A..Z
       (cp >= 0x61 && cp <= 0x7a) // a..z
     );
