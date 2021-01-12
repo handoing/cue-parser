@@ -105,4 +105,4 @@ function generate(ast, options) {
   return `function create(_ctx) { return ${code} }`
 }
 
-export { generate };
+export default generate;

@@ -84,4 +84,4 @@ function parser(tokens) {
   return list;
 }
 
-export { parser };
+export default parser;

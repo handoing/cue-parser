@@ -33,4 +33,4 @@ function tokenizer(input) {
   return tokens;
 }
 
-export { tokenizer }
+export default tokenizer;
