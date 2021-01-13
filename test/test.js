@@ -10,7 +10,7 @@ const tokens = tokenizer(`
   <div class="toggle">toggle {{toggle}}</div>
   <div c-show="{{toggle}}" c-abc="{{isGo}}">ooooo</div>
   {{#list nnnn as item by item_index}}
-  <span class="icon"></span>
+  <p>------</p>
   {{/list}}
 </div>
 `);

@@ -79,7 +79,7 @@ class Scanner {
   }
 
   [TEXT_STATE](cp, c) {
-    if (Character.isChar(cp) || cp === 46) { // .
+    if (Character.isChar(cp)) {
       this.currentToken.value += c;
       ++this.index;
     } else if (cp === 60) {

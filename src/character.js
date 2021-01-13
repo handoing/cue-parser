@@ -12,6 +12,9 @@ const Character = {
   },
   isChar(cp) {
     return (
+      cp === 46 || // .
+      cp === 45 || // -
+      cp === 95 || // _
       cp === 123 ||
       cp === 125 ||
       cp === 32 ||
