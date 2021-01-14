@@ -2,6 +2,7 @@ import tokenizer from './src/tokenizer';
 import parser from './src/parser';
 import transform from './src/transform';
 import generate from './src/generate';
+import generateSnabb from './src/generateSnabb';
 
 function compile(template) {
   const tokens = tokenizer(template);
@@ -11,4 +12,4 @@ function compile(template) {
   return dynamicFunction();
 }
 
-export { tokenizer, parser, generate, compile }
+export { tokenizer, parser, generate, generateSnabb, compile }
